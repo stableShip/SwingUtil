@@ -1,0 +1,96 @@
+package com.util;
+
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+import javax.security.auth.callback.Callback;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JToolBar;
+import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+public class SwingUtil {
+
+	public void uploadFileFrame(String title, final String callBack, final String invokeClass) {
+		JFrame jframe = new JFrame(title);
+		JPanel jPanel = new JPanel();
+		JToolBar jToolBar = new JToolBar();
+		jframe.setSize(200, 200);
+		jframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		jframe.setContentPane(jPanel);
+		JLabel jlabel = new JLabel("Please Choose");
+		jlabel.setHorizontalAlignment(SwingConstants.CENTER);
+		jPanel.add("North", jToolBar);
+		JButton jButton = new JButton("upload File");
+		jToolBar.add(jButton);
+		jPanel.add("North", jToolBar);
+		jframe.setVisible(true);
+		jButton.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent event) {
+				uploadFile(new JButton(), callBack, invokeClass);
+			}
+		});
+
+	}
+
+	public static void uploadFile(JButton jButton, String callBack, String invokeClass) {
+		JFileChooser chooser = new JFileChooser();
+		chooser.setMultiSelectionEnabled(false);
+		FileNameExtensionFilter filter = new FileNameExtensionFilter("", "s");
+		chooser.setFileFilter(filter);
+		int returnVal = chooser.showOpenDialog(jButton);
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			try {
+				File file = chooser.getSelectedFile();
+				if (file == null) {
+					return;
+				}
+				FileInputStream input = new FileInputStream(file);
+
+				String path = "./";
+				File createFile = new File(path, file.getName());
+				FileOutputStream out = new FileOutputStream(createFile);
+				byte[] buffer = new byte[2048];
+
+				int bytesRead;
+
+				bytesRead = input.read(buffer, 0, buffer.length);
+
+				while (bytesRead != -1) {
+					out.write(buffer, 0, bytesRead);
+					bytesRead = input.read(buffer, 0, buffer.length);
+				}
+				out.flush();
+				out.close();
+				input.close();
+				JOptionPane.showMessageDialog(null, "upload success! start next process... ", "notify", JOptionPane.INFORMATION_MESSAGE);
+				
+				try {
+					Class<?> callClass = Class.forName(invokeClass);
+					callClass.getMethod(callBack, new Class[]{String.class}).invoke(null, createFile.getAbsolutePath());
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(null, "upload fail!", "notify", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+
+	}
+
+}
